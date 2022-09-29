@@ -1,0 +1,44 @@
+pipeline{
+    agent any
+    tools { maven "maven3.8.6" }
+    
+    stages {
+        stage("git clone"){
+            steps{
+                git "https://github.com/emmansai/multi-pipeline"
+            }
+        }
+        stage("test&build"){
+            steps{
+                sh "mvn clean package"
+            }
+        } 
+          stage("codeQuality"){
+            steps{
+                sh "mvn sonar:sonar"
+            }
+        } 
+        stage("UploadArtifacts"){
+            steps{
+                sh "mvn deploy"
+            }
+        }  
+        stage("deploy2prod"){
+            steps{
+                deploy adapters: [tomcat9(credentialsId: 'TomcatCredentials', path: '', url: 'http://54.235.235.96:8080/')], contextPath: null, war: 'target/*war'
+            }
+       }   
+    }
+    post{
+        always{
+            emailext body: 'Status-success', recipientProviders: [contributor(), buildUser()], subject: 'Telsa-Prod', to: 'montypods@gmail.com'
+        }
+        failure{
+            emailext body: 'Status-success', recipientProviders: [contributor(), buildUser()], subject: 'Telsa-Prod', to: 'montypods@gmail.com'
+        }
+        success{
+            emailext body: 'Status-success', recipientProviders: [contributor(), buildUser()], subject: 'Telsa-Prod', to: 'montypods@gmail.com'
+        }   
+    }  
+
+}
